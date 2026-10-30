@@ -42,6 +42,10 @@ int find_boundary_value(node_t **graph, size_t n, int M) {
 }
 
 int main(int argc, char **argv) {
+  if (argc < 2) {
+    printf("Usage:...\n");
+    exit(EXIT_FAILURE);
+  }
   FILE *fp = fopen("./data/test01.uwg", "r");
   char *line = NULL;
   size_t len = 0;
