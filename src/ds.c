@@ -41,12 +41,14 @@ edge_t *get_all_edges(node_t **graph, size_t n, size_t m) {
   }
 
   size_t total_entries = 2 * m;
+
   edge_t *edges = (edge_t *)malloc(sizeof(edge_t) * total_entries);
   if (edges == NULL) {
     return NULL;
   }
 
   size_t idx = 0;
+
   for (size_t u = 0; u < n; u++) {
     node_t *curr = graph[u];
     while (curr != NULL) {
@@ -62,7 +64,7 @@ edge_t *get_all_edges(node_t **graph, size_t n, size_t m) {
 }
 
 bool dfs(node_t **graph, int current, int target, int *visited,
-         int current_weight, int normalized_weight, int B, int M) {
+         size_t current_weight, size_t normalized_weight, size_t B, size_t M) {
   if (max(current_weight, normalized_weight) > B) {
     return false;
   }

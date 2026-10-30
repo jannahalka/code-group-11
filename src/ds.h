@@ -22,4 +22,4 @@ edge_t *get_all_edges(node_t **graph, size_t n, size_t m);
 
 // Algorithms
 bool dfs(node_t **graph, int current, int target, int *visited,
-         int current_weight, int normalized_weight, int B, int M);
+         size_t current_weight, size_t normalized_weight, size_t B, size_t M);

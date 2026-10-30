@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-bool has_path(node_t **graph, size_t n, int src, int target, int B, int M) {
+bool has_path(node_t **graph, size_t n, int src, int target, size_t B,
+              size_t M) {
   int *visited = (int *)calloc(n, sizeof(int));
   if (visited == NULL) {
     return false;
@@ -18,9 +19,9 @@ bool has_path(node_t **graph, size_t n, int src, int target, int B, int M) {
   return path_exists;
 }
 
-int find_boundary_value(node_t **graph, size_t n, int M) {
+int find_boundary_value(node_t **graph, size_t n, size_t M) {
   int low = 0;
-  int high = ((int)n - 1) * M;
+  int high = (n - 1) * M;
   int optimal_B = -1;
 
   if (!has_path(graph, n, 0, n - 1, high, M)) {
@@ -41,19 +42,9 @@ int find_boundary_value(node_t **graph, size_t n, int M) {
   return optimal_B;
 }
 
-int main(int argc, char **argv) {
-  if (argc < 2) {
-    printf("Usage:...\n");
-    exit(EXIT_FAILURE);
-  }
-  FILE *fp = fopen("./data/test01.uwg", "r");
+int main() {
   char *line = NULL;
   size_t len = 0;
-  ssize_t read;
-
-  if (fp == NULL) {
-    exit(EXIT_FAILURE);
-  }
 
   size_t line_number = 0;
   size_t n = 0;
@@ -61,23 +52,26 @@ int main(int argc, char **argv) {
   size_t M = 0;
   node_t **graph = NULL;
 
-  while ((read = getline(&line, &len, fp)) != -1) {
+  while ((line = fgetln(stdin, &len)) != NULL) {
     line_number++;
 
     if (line_number == 1) {
-      n = (u_int8_t)atoi(line);
+      n = (size_t)atoi(line);
       if (graph == NULL) {
         graph = (node_t **)malloc(sizeof(node_t *) * n);
-        for (u_int8_t i = 0; i < n; i++) {
+        for (size_t i = 0; i < n; i++) {
           graph[i] = NULL;
         }
       }
     } else if (line_number == 2) {
-      m = (u_int8_t)atoi(line);
+      m = (size_t)atoi(line);
     } else if (line_number == 3) {
-      M = (u_int8_t)atoi(line);
+      M = (size_t)atoi(line);
     } else {
-      char *tok = strtok(line, " ");
+      char buf[1024];
+      snprintf(buf, sizeof(buf), "%.*s", (int)len, line);
+      char *tok = strtok(buf, " ");
+
       u_int32_t j = (u_int32_t)atoi(tok);
 
       u_int32_t k = 0;
@@ -99,14 +93,15 @@ int main(int argc, char **argv) {
   }
 
   // ------------ Optimization part ------------
-  int B = find_boundary_value(graph, n, 10);
+  int B = find_boundary_value(graph, n, M);
 
   if (B < 0) {
-    printf("no path found\n");
+    fprintf(stdout, "NO\n");
     exit(EXIT_SUCCESS);
   }
 
   edge_t *edges = get_all_edges(graph, n, m);
+
   edge_t **path = (edge_t **)malloc(sizeof(edge_t *) * (n - 1));
   for (int i = 0; i < (int)n - 1; i++) {
     path[i] = NULL;
@@ -123,29 +118,43 @@ int main(int argc, char **argv) {
     remove_edge(graph, edges[i].src, edges[i].dest);
     remove_edge(graph, edges[i].dest, edges[i].src);
 
-    if (has_path(graph, n, 0, n - 1, B, 10)) {
-      insert_edge(graph, edges[i].src, edges[i].dest, edges[i].weight);
-      insert_edge(graph, edges[i].dest, edges[i].src, edges[i].weight);
-    } else {
-      insert_edge(graph, edges[i].src, edges[i].dest, edges[i].weight);
-      insert_edge(graph, edges[i].dest, edges[i].src, edges[i].weight);
+    bool path_exists = has_path(graph, n, 0, n - 1, B, M);
 
-      if (path_count < n - 1) {
-        path[path_count++] = &edges[i];
-      }
+    insert_edge(graph, edges[i].src, edges[i].dest, edges[i].weight);
+    insert_edge(graph, edges[i].dest, edges[i].src, edges[i].weight);
+
+    if (!path_exists && path_count < n - 1) {
+      path[path_count++] = &edges[i];
     }
   }
 
+  // ------------ Output the results ------------
   for (size_t i = 0; i < path_count; i++) {
-    printf("src: %d, dest: %d\n", path[i]->src, path[i]->dest);
+    fprintf(stdout, "%d %d\n", path[i]->src + 1, path[i]->dest + 1);
   }
 
-  fclose(fp);
-  if (line)
-    free(line);
+  size_t path_sum = 0;
+  size_t path_sum_M = 0;
+  for (size_t i = 0; i < path_count; i++) {
+    path_sum += path[i]->weight;
+    path_sum_M += M - path[i]->weight;
+  }
+
+  size_t solution = max(path_sum, path_sum_M);
+
+  fprintf(stdout, "%ld\n", solution);
 
   free(edges);
   free(path);
+
+  for (size_t i = 0; i < n; i++) {
+    node_t *curr = graph[i];
+    while (curr != NULL) {
+      node_t *tmp = curr;
+      curr = curr->next;
+      free(tmp);
+    }
+  }
   free(graph);
   exit(EXIT_SUCCESS);
 }
